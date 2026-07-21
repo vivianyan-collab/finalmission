@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE LAST VAULT - FINAL MISSION</title>
+    <style>
+        /* 
+         * GLOBAL STYLES & RESET 
+         */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --accent-green: #00ff66;
+            --accent-red: #ff3333;
+            --shopee-orange: #ee4d2d;
+            --gold: #ffb703;
+            --tech-blue: #0a1128;
+            --cyan-glow: #00e5ff;
+            --gray: #777777;
+            --font-main: 'Courier New', Courier, monospace;
+            --font-zh: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 1.5s ease-in-out;
+            position: relative;
+        }
+
+        /* 动态流转的能量背景 */
+        body.success-bg {
+            background: linear-gradient(-45deg, #0b192c, #1e3a8a, #ee4d2d, #b91c1c);
+            background-size: 400% 400%;
+            animation: gradientFlow 12s ease infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 全屏粒子 Canvas */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        #particleCanvas.active { opacity: 1; }
+
+        /* 闪光转场层 */
+        #flashOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease-out;
+        }
+        #flashOverlay.flash { opacity: 0.95; }
+
+        /* 
+         * HEADER 
+         */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+
+        .timer {
+            color: var(--accent-green);
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+            transition: color 0.3s;
+        }
+        .timer.danger {
+            color: var(--accent-red);
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+            animation: pulse-fast 1s infinite;
+        }
+
+        .audio-toggle {
+            cursor: pointer;
+            font-size: 1.5rem;
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.2s;
+            user-select: none;
+        }
+        .audio-toggle:active { transform: scale(1.1); }
+
+        /* 
+         * MAIN CONTAINER 
+         */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            width: 100%;
+            z-index: 5;
+        }
+
+        .screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 
+         * STATE 1: INPUT SCREEN
+         */
+        .vault-icon {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            animation: breathe 3s infinite ease-in-out;
+            box-shadow: 0 0 15px rgba(255,255,255,0.05) inset, 0 0 15px rgba(255,255,255,0.05);
+        }
+        .vault-icon-inner {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px dashed #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: spin 20s linear infinite;
+        }
+        .vault-icon-core {
+            width: 12px;
+            height: 12px;
+            background: #555;
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+            font-weight: normal;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 25px;
+        }
+
+        .pin-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .pin-box {
+            width: 52px;
+            height: 62px;
+            background: rgba(255,255,255,0.02);
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 2.2rem;
+            text-align: center;
+            font-family: var(--font-main);
+            outline: none;
+            transition: all 0.3s;
+            caret-color: transparent;
+        }
+        .pin-box:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.3);
+            background: rgba(0, 255, 102, 0.05);
+        }
+        .pin-box.error {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.3);
+        }
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        .message-area {
+            height: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .error-msg {
+            color: var(--accent-red);
+            font-size: 0.95rem;
+            display: none;
+        }
+        .attempts-msg {
+            color: var(--gray);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+        }
+        .lock-msg {
+            color: var(--shopee-orange);
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--gray);
+            color: var(--text-color);
+            padding: 12px 32px;
+            font-size: 0.95rem;
+            font-family: var(--font-main);
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .btn:hover, .btn:active {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--text-color);
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .hints {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: #555;
+            line-height: 1.6;
+        }
+        .hints .cn-hint { font-family: var(--font-zh); letter-spacing: 1px; color: #777; }
+        .hints .mission-list { margin-top: 12px; letter-spacing: 2px; opacity: 0.5; }
+
+        /* 
+         * STATE: ANIMATING (VERIFICATION)
+         */
+        #state-animating {
+            font-size: 1.1rem;
+            text-align: left;
+        }
+        .anim-line {
+            opacity: 0;
+            margin: 8px 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+        .anim-line.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .anim-code-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+            height: 60px;
+        }
+        .anim-digit {
+            font-size: 3rem;
+            opacity: 0;
+            color: var(--shopee-orange);
+            text-shadow: 0 0 20px var(--shopee-orange);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .anim-digit.show { opacity: 1; }
+        .anim-digit.combine {
+            transform: translateX(0) !important;
+            margin: 0 -2px;
+            color: #fff;
+            text-shadow: 0 0 25px #fff, 0 0 10px var(--shopee-orange);
+        }
+        .anim-final-msg {
+            text-align: center;
+            color: var(--accent-green);
+            font-size: 1.4rem;
+            opacity: 0;
+            transition: opacity 0.5s;
+            margin-top: 15px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--accent-green);
+        }
+
+        /* 
+         * STATE: SUCCESS (FINAL SCREEN - ULTRA VISUALS)
+         */
+        .success-badge {
+            font-size: 3.5rem;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 20px rgba(255, 183, 3, 0.8));
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+
+        .success-title-main {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 40px var(--shopee-orange);
+            margin-bottom: 2px;
+            animation: slamIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .success-title-sub {
+            font-family: var(--font-zh);
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--gold);
+            letter-spacing: 3px;
+            text-shadow: 0 0 12px rgba(255, 183, 3, 0.6);
+            margin-bottom: 20px;
+        }
+
+        /* 高级玻璃感密码框 + 金属金属流光 */
+        .code-card {
+            background: rgba(10, 17, 40, 0.65);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 16px 35px;
+            border-radius: 16px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 20px rgba(238, 77, 45, 0.3);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* 密码条划过流光效果 */
+        .code-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 40%;
+            height: 200%;
+            background: linear-gradient(
+                60deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.4), 
+                transparent
+            );
+            transform: rotate(25deg);
+            animation: lightSweep 3.5s infinite;
+        }
+
+        @keyframes lightSweep {
+            0% { left: -60%; }
+            20% { left: 140%; }
+            100% { left: 140%; }
+        }
+
+        .code-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            font-family: var(--font-zh);
+        }
+
+        .code-value {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: var(--shopee-orange);
+            text-shadow: 0 0 20px var(--shopee-orange), 0 0 40px rgba(238, 77, 45, 0.8);
+            letter-spacing: 6px;
+            font-family: var(--font-main);
+        }
+
+        /* 煽动性中文 + 英文对照文案 */
+        .story-container {
+            font-family: var(--font-zh);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .story-cn {
+            font-size: 0.98rem;
+            color: #ffffff;
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            margin-bottom: 12px;
+        }
+
+        .story-cn span.highlight {
+            color: var(--gold);
+            text-shadow: 0 0 8px rgba(255, 183, 3, 0.6);
+        }
+
+        .story-en {
+            font-family: var(--font-main);
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.4;
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            padding-top: 10px;
+        }
+
+        /* 通关荣誉横幅 */
+        .winner-banner {
+            background: linear-gradient(90deg, rgba(238,77,45,0.2) 0%, rgba(255,183,3,0.4) 50%, rgba(238,77,45,0.2) 100%);
+            border: 1px solid rgba(255, 183, 3, 0.6);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: var(--font-zh);
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 183, 3, 0.8);
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.3);
+            margin-bottom: 12px;
+            animation: pulseGlow 2s infinite ease-in-out;
+            width: 100%;
+        }
+
+        .wait-msg {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: var(--font-zh);
+        }
+
+        /* 
+         * STATE: FAILED 
+         */
+        .failed-title {
+            font-size: 2.3rem;
+            color: var(--accent-red);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px var(--accent-red);
+        }
+        .failed-text {
+            color: var(--gray);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* 
+         * KEYFRAMES 
+         */
+        @keyframes breathe {
+            0%, 100% { border-color: #333; box-shadow: 0 0 15px rgba(255,255,255,0.05); }
+            50% { border-color: #666; box-shadow: 0 0 25px rgba(255,255,255,0.15); }
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        @keyframes slamIn {
+            0% { transform: scale(2.5); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1); opacity: 1; filter: blur(0); }
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 183, 3, 0.3); border-color: rgba(255, 183, 3, 0.6); }
+            50% { box-shadow: 0 0 25px rgba(255, 183, 3, 0.8); border-color: rgba(255, 255, 255, 0.9); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 粒子特效 Canvas -->
+    <canvas id="particleCanvas"></canvas>
+    
+    <!-- 爆闪过场层 -->
+    <div id="flashOverlay"></div>
+
+    <header>
+        <div class="audio-toggle" id="audioBtn" title="Sound Toggle">🔊</div>
+        <div class="timer" id="timerDisplay">05:00</div>
+    </header>
+
+    <main>
+        <!-- STATE 1: INPUT SCREEN -->
+        <div id="state-input" class="screen active">
+            <div class="vault-icon">
+                <div class="vault-icon-inner">
+                    <div class="vault-icon-core"></div>
+                </div>
+            </div>
+            
+            <h1 id="ui-title">THE LAST VAULT</h1>
+            <div class="subtitle">Enter the final password to unlock the vault.</div>
+
+            <div class="pin-group" id="pinGroup">
+                <input type="tel" class="pin-box" maxlength="1" data-index="0" autocomplete="off">
+                <input type="tel" class="pin-box" maxlength="1" data-index="1" autocomplete="off">
+                <input type="tel" class="pin-box" maxlength="1" data-index="2" autocomplete="off">
+                <input type="tel" class="pin-box" maxlength="1" data-index="3" autocomplete="off">
+            </div>
+
+            <div class="message-area">
+                <div class="error-msg" id="errorMsg">❌ Incorrect Password</div>
+                <div class="attempts-msg" id="attemptsMsg">Attempts <span id="attemptCount">0</span> / 3</div>
+                <div class="lock-msg" id="lockMsg">
+                    <div>SYSTEM LOCKED</div>
+                    <div style="font-size:0.8rem; margin-top:4px; color:#aaa;">Too many incorrect attempts. Retry in <span id="lockTimerDisplay">00:30</span></div>
+                </div>
+            </div>
+
+            <button class="btn" id="unlockBtn">🔓 Unlock Vault</button>
+
+            <div class="hints">
+                <div class="cn-hint">没有白走的路，步步都算数。</div>
+                <div>The answer has been with you all along.</div>
+                <div class="mission-list">Mission 01 &nbsp; Mission 02 &nbsp; Mission 03 &nbsp; Mission 04</div>
+            </div>
+        </div>
+
+        <!-- STATE: ANIMATING (Verification) -->
+        <div id="state-animating" class="screen">
+            <div class="anim-line" id="anim-step-0">Verifying...</div>
+            <div class="anim-line" id="anim-step-1" style="color:var(--accent-green)">✓ Mission 01</div>
+            <div class="anim-line" id="anim-step-2" style="color:var(--accent-green)">✓ Mission 02</div>
+            <div class="anim-line" id="anim-step-3" style="color:var(--accent-green)">✓ Mission 03</div>
+            <div class="anim-line" id="anim-step-4" style="color:var(--accent-green)">✓ Mission 04</div>
+            
+            <div class="anim-code-container">
+                <div class="anim-digit" id="digit-0">7</div>
+                <div class="anim-digit" id="digit-1">5</div>
+                <div class="anim-digit" id="digit-2">8</div>
+                <div class="anim-digit" id="digit-3">3</div>
+            </div>
+
+            <div class="anim-final-msg" id="anim-unlocked">🔓 VAULT UNLOCKED</div>
+        </div>
+
+        <!-- STATE: SUCCESS (ULTRA IMPACTFUL BILINGUAL SCREEN) -->
+        <div id="state-success" class="screen">
+            <div class="success-badge">🏆</div>
+            <div class="success-title-main">MISSION COMPLETE</div>
+            <div class="success-title-sub">终极任务 · 完美破译</div>
+            
+            <div class="code-card">
+                <div class="code-label">Vault Code Verified / 密钥已通过核验</div>
+                <div class="code-value" id="finalCodeDisplay">7583</div>
+            </div>
+
+            <div class="story-container">
+                <div class="story-cn">
+                    恭喜所有队员！<br>
+                    这不仅是一场解密，更是一次并肩作战的传奇之旅！<br>
+                    <span class="highlight">每一个线索都是智慧的火花，每一个队友都是不可或缺的基石！</span>
+                </div>
+                <div class="story-en">
+                    Congratulations! You have successfully completed all four Missions and unlocked the final vault.<br>
+                    Every clue mattered. Every teammate mattered.
+                </div>
+            </div>
+
+            <div class="winner-banner">
+                🌟 荣耀属于我们每个人！
+            </div>
+            
+            <div class="wait-msg">Please wait for the host / 请在原位稍作休息，等待主持人</div>
+        </div>
+
+        <!-- STATE: FAILED -->
+        <div id="state-failed" class="screen">
+            <div class="failed-title">MISSION FAILED</div>
+            <div class="failed-text">
+                Time is over.<br>
+                The vault has been permanently locked.<br><br>
+                时间已耗尽，保险库已被永久锁定。
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * CONFIGURATION
+         * Centralized config as requested.
+         */
+        const CONFIG = {
+            PASSWORD: "7583",
+            GAME_TIME: 300,          // Total game time in seconds (5 min)
+            MAX_ATTEMPTS: 3,         // Max attempts before lock
+            LOCK_TIME: 30,           // Lockout time in seconds
+            SUCCESS_SOUND: true,     // Play audio on success
+            
+            TEXT: {
+                title: "THE LAST VAULT",
+                unlock: "Unlock Vault",
+                missionComplete: "MISSION COMPLETE",
+                vaultUnlocked: "VAULT UNLOCKED",
+                incorrect: "❌ Incorrect Password",
+                locked: "SYSTEM LOCKED",
+                failed: "MISSION FAILED"
+            }
+        };
+
+        // DOM Elements
+        const screens = {
+            input: document.getElementById('state-input'),
+            animating: document.getElementById('state-animating'),
+            success: document.getElementById('state-success'),
+            failed: document.getElementById('state-failed')
+        };
+        const inputs = document.querySelectorAll('.pin-box');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const errorMsg = document.getElementById('errorMsg');
+        const attemptsMsg = document.getElementById('attemptsMsg');
+        const attemptCountSpan = document.getElementById('attemptCount');
+        const lockMsg = document.getElementById('lockMsg');
+        const lockTimerDisplay = document.getElementById('lockTimerDisplay');
+        const audioBtn = document.getElementById('audioBtn');
+        const pinGroup = document.getElementById('pinGroup');
+        const flashOverlay = document.getElementById('flashOverlay');
+
+        // State Variables
+        let timeRemaining = CONFIG.GAME_TIME;
+        let mainTimerInterval = null;
+        let attemptCount = 0;
+        let isLocked = false;
+        let isGameOver = false;
+        let isMuted = false;
+        let lockTimerInterval = null;
+        let audioContext = null;
+
+        // Initialize
+        function init() {
+            document.getElementById('ui-title').innerText = CONFIG.TEXT.title;
+            unlockBtn.innerText = `🔓 ${CONFIG.TEXT.unlock}`;
+            
+            for(let i = 0; i < 4; i++) {
+                document.getElementById(`digit-${i}`).innerText = CONFIG.PASSWORD[i];
+            }
+            document.getElementById('finalCodeDisplay').innerText = CONFIG.PASSWORD;
+
+            startMainTimer();
+            setupInputs();
+            setupAudio();
+
+            unlockBtn.addEventListener('click', handleUnlock);
+        }
+
+        // Timer Logic
+        function startMainTimer() {
+            updateTimerDisplay();
+            mainTimerInterval = setInterval(() => {
+                if (isGameOver) return clearInterval(mainTimerInterval);
+                
+                timeRemaining--;
+                updateTimerDisplay();
+
+                if (timeRemaining <= 0) {
+                    clearInterval(mainTimerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(Math.max(timeRemaining, 0) / 60).toString().padStart(2, '0');
+            const s = (Math.max(timeRemaining, 0) % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${m}:${s}`;
+            
+            if (timeRemaining <= 60 && timeRemaining > 0) {
+                timerDisplay.classList.add('danger');
+            } else {
+                timerDisplay.classList.remove('danger');
+            }
+        }
+
+        function handleTimeout() {
+            isGameOver = true;
+            disableInputs();
+            unlockBtn.disabled = true;
+            switchScreen('failed');
+            document.body.style.backgroundColor = "#020202";
+            document.body.style.opacity = "0.7";
+        }
+
+        // Screen Switch
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            if(screens[screenName]) {
+                screens[screenName].classList.add('active');
+            }
+        }
+
+        // Input Logic
+        function setupInputs() {
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    input.classList.remove('error');
+                    clearErrorUI();
+                    
+                    input.value = input.value.replace(/[^0-9]/g, '');
+                    
+                    if (input.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !input.value && index > 0) {
+                        inputs[index - 1].focus();
+                    } else if (e.key === 'Enter') {
+                        handleUnlock();
+                    }
+                });
+
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                    if (!pasteData) return;
+                    
+                    for (let i = 0; i < inputs.length; i++) {
+                        if (i >= index && i - index < pasteData.length) {
+                            inputs[i].value = pasteData[i - index];
+                        }
+                    }
+                    
+                    const nextFocus = Math.min(index + pasteData.length, inputs.length - 1);
+                    inputs[nextFocus].focus();
+                    clearErrorUI();
+                });
+            });
+        }
+
+        function getInputValue() {
+            return Array.from(inputs).map(inp => inp.value).join('');
+        }
+
+        function disableInputs() {
+            inputs.forEach(inp => inp.disabled = true);
+        }
+        function enableInputs() {
+            inputs.forEach(inp => {
+                inp.disabled = false;
+                inp.value = '';
+            });
+            if (inputs.length > 0) inputs[0].focus();
+        }
+
+        // Validation Logic
+        function handleUnlock() {
+            if (isLocked || isGameOver) return;
+            
+            const val = getInputValue();
+            if (val.length < 4) {
+                showError("Please enter 4 digits.");
+                triggerShake();
+                return;
+            }
+
+            if (val === CONFIG.PASSWORD) {
+                handleSuccess();
+            } else {
+                handleFailure();
+            }
+        }
+
+        function handleFailure() {
+            attemptCount++;
+            triggerShake();
+            inputs.forEach(inp => inp.classList.add('error'));
+            
+            if (attemptCount >= CONFIG.MAX_ATTEMPTS) {
+                startLockout();
+            } else {
+                errorMsg.innerText = CONFIG.TEXT.incorrect;
+                errorMsg.style.display = "block";
+                attemptCountSpan.innerText = attemptCount;
+                attemptsMsg.style.display = "block";
+                
+                setTimeout(() => {
+                    inputs.forEach(inp => {
+                        inp.value = '';
+                        inp.classList.remove('error');
+                    });
+                    inputs[0].focus();
+                }, 800);
+            }
+        }
+
+        function triggerShake() {
+            pinGroup.classList.remove('shake');
+            void pinGroup.offsetWidth;
+            pinGroup.classList.add('shake');
+        }
+
+        function clearErrorUI() {
+            errorMsg.style.display = "none";
+            attemptsMsg.style.display = "none";
+            inputs.forEach(inp => inp.classList.remove('error'));
+        }
+
+        showError = (msg) => {
+            errorMsg.innerText = msg;
+            errorMsg.style.display = "block";
+            attemptsMsg.style.display = "none";
+        };
+
+        // Lockout
+        function startLockout() {
+            isLocked = true;
+            disableInputs();
+            unlockBtn.disabled = true;
+            
+            errorMsg.style.display = "none";
+            attemptsMsg.style.display = "none";
+            lockMsg.style.display = "block";
+            
+            let lockTime = CONFIG.LOCK_TIME;
+            
+            const updateLockUI = () => {
+                lockTimerDisplay.innerText = `00:${lockTime.toString().padStart(2, '0')}`;
+            };
+            
+            updateLockUI();
+            
+            lockTimerInterval = setInterval(() => {
+                lockTime--;
+                updateLockUI();
+                
+                if (lockTime <= 0) {
+                    clearInterval(lockTimerInterval);
+                    endLockout();
+                }
+            }, 1000);
+        }
+
+        function endLockout() {
+            if(isGameOver) return;
+            isLocked = false;
+            attemptCount = 0;
+            enableInputs();
+            unlockBtn.disabled = false;
+            lockMsg.style.display = "none";
+            clearErrorUI();
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // SUCCESS ANIMATION SEQUENCE
+        async function handleSuccess() {
+            isGameOver = true;
+            disableInputs();
+            unlockBtn.style.display = "none";
+            clearInterval(mainTimerInterval);
+            
+            switchScreen('animating');
+            
+            // 1. Verifying...
+            document.getElementById('anim-step-0').classList.add('show');
+            await sleep(500);
+            
+            // 2. Light up missions
+            for(let i = 1; i <= 4; i++) {
+                document.getElementById(`anim-step-${i}`).classList.add('show');
+                await sleep(300);
+            }
+            
+            await sleep(400);
+
+            // 3. Digits appear
+            for(let i = 0; i < 4; i++) {
+                document.getElementById(`digit-${i}`).classList.add('show');
+                await sleep(200);
+            }
+
+            await sleep(600);
+
+            // 4. Combine digits
+            const digits = document.querySelectorAll('.anim-digit');
+            digits[0].style.transform = 'translateX(30px)';
+            digits[1].style.transform = 'translateX(10px)';
+            digits[2].style.transform = 'translateX(-10px)';
+            digits[3].style.transform = 'translateX(-30px)';
+            digits.forEach(d => d.classList.add('combine'));
+
+            await sleep(800);
+
+            // 5. Vault Unlocked text
+            const unlockedMsg = document.getElementById('anim-unlocked');
+            unlockedMsg.innerText = CONFIG.TEXT.vaultUnlocked;
+            unlockedMsg.style.opacity = "1";
+
+            await sleep(1000);
+
+            // 6. FLASHBANG + SCREEN SHAKE TRANSITION
+            flashOverlay.classList.add('flash');
+            setTimeout(() => flashOverlay.classList.remove('flash'), 300);
+
+            // Transition body bg & show final screen
+            document.body.classList.add('success-bg');
+            switchScreen('success');
+
+            // Trigger Fullscreen Particle Burst VFX
+            initParticleSystem();
+            playVictorySound();
+        }
+
+        // Particle System VFX
+        function initParticleSystem() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.classList.add('active');
+
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const particles = [];
+            const colors = ['#ee4d2d', '#ffb703', '#00e5ff', '#ffffff', '#ff0055'];
+
+            // Initial Burst (Fountain/Explosion from Center)
+            const particleCount = 180;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 12 + 2;
+                particles.push({
+                    x: width / 2,
+                    y: height / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2, // slightly upwards
+                    radius: Math.random() * 4 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.005,
+                    gravity: 0.15,
+                    shape: Math.random() > 0.5 ? 'circle' : 'star'
+                });
+            }
+
+            // Continuous Floating Ambient Particles
+            function spawnAmbientParticle() {
+                if (particles.length < 250) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: height + 10,
+                        vx: (Math.random() - 0.5) * 1.5,
+                        vy: - (Math.random() * 2 + 1),
+                        radius: Math.random() * 3 + 1.5,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        alpha: Math.random() * 0.8 + 0.2,
+                        decay: 0.003,
+                        gravity: -0.01,
+                        shape: 'circle'
+                    });
+                }
+            }
+
+            let ambientTimer = setInterval(spawnAmbientParticle, 100);
+
+            function render() {
+                ctx.clearRect(0, 0, width, height);
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += p.gravity;
+                    p.alpha -= p.decay;
+
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            render();
+        }
+
+        // Audio Management
+        function setupAudio() {
+            audioBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                audioBtn.innerText = isMuted ? '🔇' : '🔊';
+            });
+        }
+
+        function playVictorySound() {
+            if (!CONFIG.SUCCESS_SOUND || isMuted) return;
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const playNote = (freq, startTime, duration, type='sine', vol=0.4) => {
+                    const osc = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioContext.currentTime + startTime);
+                    
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+                    gainNode.gain.linearRampToValueAtTime(vol, audioContext.currentTime + startTime + 0.08);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    osc.start(audioContext.currentTime + startTime);
+                    osc.stop(audioContext.currentTime + startTime + duration);
+                };
+
+                // Futuristic Triumph Chord Fanfare
+                playNote(523.25, 0.0, 0.8, 'sine', 0.3);   // C5
+                playNote(659.25, 0.1, 0.8, 'sine', 0.3);   // E5
+                playNote(783.99, 0.2, 0.8, 'sine', 0.3);   // G5
+
+                playNote(783.99, 0.8, 1.0, 'triangle', 0.3); // G5
+                playNote(987.77, 0.9, 1.0, 'triangle', 0.3); // B5
+                playNote(1174.66, 1.0, 1.0, 'triangle', 0.3); // D6
+
+                // Grand Final Chord & Sparkle
+                playNote(1046.50, 1.5, 3.5, 'sine', 0.5);  // C6
+                playNote(1318.51, 1.6, 3.5, 'sine', 0.4);  // E6
+                playNote(1567.98, 1.7, 3.5, 'sine', 0.4);  // G6
+                playNote(2093.00, 1.9, 4.0, 'sine', 0.3);  // C7
+
+            } catch(e) {
+                console.log("Audio playback blocked/unsupported.");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
