@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Task Force - Final Access</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            background: #1e293b;
+            padding: 40px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 85%;
+            box-sizing: border-box;
+        }
+        h1 { color: #38bdf8; letter-spacing: 2px; margin-bottom: 10px; }
+        .timer {
+            font-size: 3rem; font-weight: bold; color: #f87171;
+            margin: 20px 0; font-variant-numeric: tabular-nums;
+        }
+        .input-group { display: flex; justify-content: center; gap: 12px; margin: 30px 0; }
+        .digit-input {
+            width: 50px; height: 60px; font-size: 2rem; text-align: center;
+            background: #334155; border: 2px solid #475569; color: #fff;
+            border-radius: 8px; outline: none; transition: all 0.3s;
+        }
+        .digit-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        .message { height: 24px; color: #f87171; font-weight: bold; margin-bottom: 20px; font-size: 0.95rem; }
+        .btn {
+            background: #38bdf8; color: #0f172a; border: none; padding: 12px 30px;
+            font-size: 1.2rem; font-weight: bold; border-radius: 6px; cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+        .btn:hover { background: #0ea5e9; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        
+        /* 移动端提示文本强行单行自适应 */
+        .mission-hint {
+            white-space: nowrap;
+            overflow: hidden;
+            font-size: clamp(10px, 3.2vw, 14px);
+            color: #64748b;
+            margin-top: 15px;
+            letter-spacing: 1px;
+        }
+
+        .badge-screen {
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center;
+        }
+        
+        /* 解锁成功的爆发动效 */
+        .badge-screen.active {
+            display: flex;
+            animation: burstIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .badge-icon { 
+            font-size: 5.5rem; 
+            margin-bottom: 15px; 
+            filter: drop-shadow(0 0 15px rgba(74, 222, 128, 0.4));
+        }
+        .success-text { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3); }
+        .explorer-text { color: #94a3b8; }
+        
+        @keyframes burstIn {
+            0% { opacity: 0; transform: scale(0.6); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="main-screen">
+        <h1>FINAL ACCESS</h1>
+        <p style="margin: 5px 0;">系统已锁定，请输入4位授权代码</p>
+        <div class="timer" id="timer">05:00</div>
+        <div class="input-group">
+            <input type="tel" class="digit-input" maxlength="1" id="d1" onkeyup="moveToNext(this, 'd2', null)">
+            <input type="tel" class="digit-input" maxlength="1" id="d2" onkeyup="moveToNext(this, 'd3', 'd1')">
+            <input type="tel" class="digit-input" maxlength="1" id="d3" onkeyup="moveToNext(this, 'd4', 'd2')">
+            <input type="tel" class="digit-input" maxlength="1" id="d4" onkeyup="submitOnEnter(event, 'd3')">
+        </div>
+        <div class="message" id="message"></div>
+        <button class="btn" id="submit-btn" onclick="checkPassword()">验证</button>
+        
+        <div class="mission-hint">
+            Mission 01 &nbsp; Mission 02 &nbsp; Mission 03 &nbsp; Mission 04
+        </div>
+    </div>
+
+    <div class="container badge-screen" id="success-screen">
+        <div class="badge-icon">🏆</div>
+        <h1 class="success-text">解密成功！</h1>
+        <h2>获得【解密者徽章】</h2>
+        <p style="font-size: 1.2rem; color: #facc15; margin-top: 20px; line-height: 1.5;">
+            请立即举手呼叫主持人！<br>全场第一支举手的队伍将升级为【首解荣耀徽章】
+        </p>
+    </div>
+
+    <div class="container badge-screen" id="timeout-screen">
+        <div class="badge-icon">🧭</div>
+        <h1 class="explorer-text">时间耗尽</h1>
+        <h2>致敬您的探索精神</h2>
+        <p style="line-height: 1.5;">若您已集齐3枚印章，您将获得【探索者徽章】<br>真正的默契不在于结果，而在于共同拼搏的过程。</p>
+    </div>
+
+    <script>
+        const CORRECT_PASSWORD = "7581";
+        const TOTAL_TIME = 300; // 5分钟
+        const LOCK_DURATION = 30; // 错一次锁30秒
+        let timerInterval;
+
+        // 音效部分（采用 Base64 编码的毫秒级清脆“咔哒”开锁音，无需额外上传音频文件）
+        const unlockAudio = new Audio("data:audio/wav;base64,UklGRqA4AABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YYA4AAB9f359fH58fHx+fH99f36AfYCAgICAfX59fn5+fn5+fn5+fH18fH19fHx8fHx8fHx8fn1+f3+AgICAgn+AgICAgIB+fn19fHx8fHx8");
+
+        function initTimer() {
+            let startTime = localStorage.getItem('mission_start_time');
+            if (!startTime) {
+                startTime = Date.now();
+                localStorage.setItem('mission_start_time', startTime);
+            }
+
+            timerInterval = setInterval(() => {
+                let now = Date.now();
+                let elapsedSeconds = Math.floor((now - startTime) / 1000);
+                let remaining = TOTAL_TIME - elapsedSeconds;
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').innerText = "00:00";
+                    showScreen('timeout-screen');
+                    return;
+                }
+                
+                let m = Math.floor(remaining / 60).toString().padStart(2, '0');
+                let s = (remaining % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function checkLockState() {
+            let lockUntil = localStorage.getItem('lock_until_time');
+            if (lockUntil) {
+                let remainingLock = Math.ceil((parseInt(lockUntil) - Date.now()) / 1000);
+                if (remainingLock > 0) {
+                    triggerLockout(remainingLock);
+                }
+            }
+        }
+
+        function moveToNext(current, nextFieldID, prevFieldID) {
+            current.value = current.value.replace(/[^0-9]/g, '');
+            if (current.value.length >= 1 && nextFieldID) {
+                document.getElementById(nextFieldID).focus();
+            } else if (current.value.length === 0 && prevFieldID) {
+                document.getElementById(prevFieldID).focus();
+            }
+        }
+
+        function submitOnEnter(event, prevFieldID) {
+            let current = document.getElementById('d4');
+            current.value = current.value.replace(/[^0-9]/g, '');
+            if (event.key === "Enter") {
+                checkPassword();
+            } else if (current.value.length === 0 && event.key === "Backspace") {
+                document.getElementById(prevFieldID).focus();
+            }
+        }
+
+        function checkPassword() {
+            let lockUntil = localStorage.getItem('lock_until_time');
+            if (lockUntil && Date.now() < parseInt(lockUntil)) return;
+
+            let input = ['d1','d2','d3','d4'].map(id => document.getElementById(id).value).join('');
+
+            if (input.length < 4) {
+                showMessage("请输入完整的4位密码");
+                return;
+            }
+
+            if (input === CORRECT_PASSWORD) {
+                clearInterval(timerInterval);
+                try { unlockAudio.play(); } catch(e){}
+                showScreen('success-screen');
+            } else {
+                let lockUntilTime = Date.now() + (LOCK_DURATION * 1000);
+                localStorage.setItem('lock_until_time', lockUntilTime);
+                triggerLockout(LOCK_DURATION);
+            }
+        }
+
+        function triggerLockout(duration) {
+            let btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            clearInputs();
+            
+            let count = duration;
+            showMessage(`密码错误！系统锁定中，请等待 ${count} 秒...`);
+
+            let lockInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    showMessage(`密码错误！系统锁定中，请等待 ${count} 秒...`);
+                } else {
+                    clearInterval(lockInterval);
+                    localStorage.removeItem('lock_until_time');
+                    btn.disabled = false;
+                    showMessage("");
+                    document.getElementById('d1').focus();
+                }
+            }, 1000);
+        }
+
+        function showMessage(msg) { document.getElementById('message').innerText = msg; }
+
+        function clearInputs() {
+            ['d1','d2','d3','d4'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function showScreen(screenId) {
+            document.getElementById('main-screen').style.display = 'none';
+            let targetScreen = document.getElementById(screenId);
+            targetScreen.classList.add('active');
+        }
+
+        window.onload = () => {
+            initTimer();
+            checkLockState();
+            document.getElementById('d1').focus();
+        };
+    </script>
+</body>
+</html>
