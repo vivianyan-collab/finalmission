@@ -60,11 +60,11 @@
             pointer-events: none;
             z-index: 2;
             opacity: 0;
-            transition: opacity 1s ease;
+            transition: opacity 0.5s ease;
         }
         #particleCanvas.active { opacity: 1; }
 
-        /* 闪光转场层 */
+        /* 爆闪过场层 (支持绿光炸裂) */
         #flashOverlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -74,7 +74,10 @@
             pointer-events: none;
             transition: opacity 0.15s ease-out;
         }
-        #flashOverlay.flash { opacity: 0.95; }
+        #flashOverlay.flash-green {
+            background: var(--accent-green);
+            opacity: 0.85;
+        }
 
         /* 
          * HEADER 
@@ -138,7 +141,7 @@
             align-items: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.3s ease;
         }
         .screen.active {
             opacity: 1;
@@ -223,7 +226,7 @@
         }
 
         .message-area {
-            height: 45px;
+            height: 35px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -231,17 +234,6 @@
         }
         .error-msg {
             color: var(--accent-red);
-            font-size: 0.95rem;
-            display: none;
-        }
-        .attempts-msg {
-            color: var(--gray);
-            font-size: 0.8rem;
-            margin-top: 4px;
-            display: none;
-        }
-        .lock-msg {
-            color: var(--shopee-orange);
             font-size: 0.95rem;
             display: none;
         }
@@ -265,9 +257,11 @@
             box-shadow: 0 0 10px rgba(255,255,255,0.2);
         }
         .btn:disabled {
-            opacity: 0.3;
+            opacity: 0.5;
             cursor: not-allowed;
             box-shadow: none;
+            border-color: var(--accent-red);
+            color: var(--accent-red);
         }
 
         .hints {
@@ -277,10 +271,18 @@
             line-height: 1.6;
         }
         .hints .cn-hint { font-family: var(--font-zh); letter-spacing: 1px; color: #777; }
-        .hints .mission-list { margin-top: 12px; letter-spacing: 2px; opacity: 0.5; }
+        
+        /* 移动端防换行 + clamp() 响应式字号 */
+        .hints .mission-list { 
+            margin-top: 12px; 
+            letter-spacing: 2px; 
+            opacity: 0.5; 
+            white-space: nowrap;
+            font-size: clamp(0.65rem, 3.2vw, 0.85rem);
+        }
 
         /* 
-         * STATE: ANIMATING (VERIFICATION)
+         * STATE: ANIMATING (VERIFICATION ANIMATION)
          */
         #state-animating {
             font-size: 1.1rem;
@@ -329,7 +331,7 @@
         }
 
         /* 
-         * STATE: SUCCESS (FINAL SCREEN - ULTRA VISUALS)
+         * STATE: SUCCESS (FINAL SCREEN)
          */
         .success-badge {
             font-size: 3.5rem;
@@ -345,7 +347,7 @@
             color: #ffffff;
             text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 40px var(--shopee-orange);
             margin-bottom: 2px;
-            animation: slamIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: slamIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         .success-title-sub {
@@ -358,7 +360,6 @@
             margin-bottom: 20px;
         }
 
-        /* 高级玻璃感密码框 + 金属金属流光 */
         .code-card {
             background: rgba(10, 17, 40, 0.65);
             border: 1.5px solid rgba(255, 255, 255, 0.25);
@@ -373,7 +374,6 @@
             width: 100%;
         }
 
-        /* 密码条划过流光效果 */
         .code-card::after {
             content: '';
             position: absolute;
@@ -381,12 +381,7 @@
             left: -60%;
             width: 40%;
             height: 200%;
-            background: linear-gradient(
-                60deg, 
-                transparent, 
-                rgba(255, 255, 255, 0.4), 
-                transparent
-            );
+            background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.4), transparent);
             transform: rotate(25deg);
             animation: lightSweep 3.5s infinite;
         }
@@ -414,7 +409,6 @@
             font-family: var(--font-main);
         }
 
-        /* 煽动性中文 + 英文对照文案 */
         .story-container {
             font-family: var(--font-zh);
             line-height: 1.6;
@@ -445,7 +439,6 @@
             padding-top: 10px;
         }
 
-        /* 通关荣誉横幅 */
         .winner-banner {
             background: linear-gradient(90deg, rgba(238,77,45,0.2) 0%, rgba(255,183,3,0.4) 50%, rgba(238,77,45,0.2) 100%);
             border: 1px solid rgba(255, 183, 3, 0.6);
@@ -502,7 +495,7 @@
             50% { opacity: 0.4; }
         }
         @keyframes slamIn {
-            0% { transform: scale(2.5); opacity: 0; filter: blur(10px); }
+            0% { transform: scale(2); opacity: 0; filter: blur(10px); }
             100% { transform: scale(1); opacity: 1; filter: blur(0); }
         }
         @keyframes floatSlow {
@@ -549,11 +542,6 @@
 
             <div class="message-area">
                 <div class="error-msg" id="errorMsg">❌ Incorrect Password</div>
-                <div class="attempts-msg" id="attemptsMsg">Attempts <span id="attemptCount">0</span> / 3</div>
-                <div class="lock-msg" id="lockMsg">
-                    <div>SYSTEM LOCKED</div>
-                    <div style="font-size:0.8rem; margin-top:4px; color:#aaa;">Too many incorrect attempts. Retry in <span id="lockTimerDisplay">00:30</span></div>
-                </div>
             </div>
 
             <button class="btn" id="unlockBtn">🔓 Unlock Vault</button>
@@ -561,11 +549,11 @@
             <div class="hints">
                 <div class="cn-hint">没有白走的路，步步都算数。</div>
                 <div>The answer has been with you all along. Connecting the Dots.</div>
-                <div class="mission-list">Mission 01 &nbsp; Mission 02 &nbsp; Mission 03 &nbsp; Mission 04</div>
+                <div class="mission-list">M 01 &nbsp; M 02 &nbsp; M 03 &nbsp; M 04</div>
             </div>
         </div>
 
-        <!-- STATE: ANIMATING (Verification) -->
+        <!-- STATE: ANIMATING (加回：解密核验过程动画) -->
         <div id="state-animating" class="screen">
             <div class="anim-line" id="anim-step-0">Verifying...</div>
             <div class="anim-line" id="anim-step-1" style="color:var(--accent-green)">✓ Mission 01</div>
@@ -577,13 +565,13 @@
                 <div class="anim-digit" id="digit-0">7</div>
                 <div class="anim-digit" id="digit-1">5</div>
                 <div class="anim-digit" id="digit-2">8</div>
-                <div class="anim-digit" id="digit-3">3</div>
+                <div class="anim-digit" id="digit-3">1</div>
             </div>
 
             <div class="anim-final-msg" id="anim-unlocked">🔓 VAULT UNLOCKED</div>
         </div>
 
-        <!-- STATE: SUCCESS (ULTRA IMPACTFUL BILINGUAL SCREEN) -->
+        <!-- STATE: SUCCESS -->
         <div id="state-success" class="screen">
             <div class="success-badge">🏆</div>
             <div class="success-title-main">MISSION COMPLETE</div>
@@ -591,7 +579,7 @@
             
             <div class="code-card">
                 <div class="code-label">Vault Code Verified / 密钥已通过核验</div>
-                <div class="code-value" id="finalCodeDisplay">7583</div>
+                <div class="code-value" id="finalCodeDisplay">7581</div>
             </div>
 
             <div class="story-container">
@@ -625,25 +613,17 @@
     </main>
 
     <script>
-        /**
-         * CONFIGURATION
-         * Centralized config as requested.
-         */
         const CONFIG = {
-            PASSWORD: "7583",
-            GAME_TIME: 300,          // Total game time in seconds (5 min)
-            MAX_ATTEMPTS: 3,         // Max attempts before lock
-            LOCK_TIME: 30,           // Lockout time in seconds
-            SUCCESS_SOUND: true,     // Play audio on success
+            PASSWORD: "7581",        // 统一密码定义 7581
+            GAME_TIME: 300,          // 5 分钟
+            LOCK_TIME: 30,           // 30 秒惩罚
+            SUCCESS_SOUND: true,
             
             TEXT: {
                 title: "THE LAST VAULT",
                 unlock: "Unlock Vault",
-                missionComplete: "MISSION COMPLETE",
                 vaultUnlocked: "VAULT UNLOCKED",
-                incorrect: "❌ Incorrect Password",
-                locked: "SYSTEM LOCKED",
-                failed: "MISSION FAILED"
+                incorrect: "❌ Incorrect Password"
             }
         };
 
@@ -658,67 +638,113 @@
         const unlockBtn = document.getElementById('unlockBtn');
         const timerDisplay = document.getElementById('timerDisplay');
         const errorMsg = document.getElementById('errorMsg');
-        const attemptsMsg = document.getElementById('attemptsMsg');
-        const attemptCountSpan = document.getElementById('attemptCount');
-        const lockMsg = document.getElementById('lockMsg');
-        const lockTimerDisplay = document.getElementById('lockTimerDisplay');
         const audioBtn = document.getElementById('audioBtn');
         const pinGroup = document.getElementById('pinGroup');
         const flashOverlay = document.getElementById('flashOverlay');
 
         // State Variables
-        let timeRemaining = CONFIG.GAME_TIME;
         let mainTimerInterval = null;
-        let attemptCount = 0;
+        let lockTimerInterval = null;
         let isLocked = false;
         let isGameOver = false;
         let isMuted = false;
-        let lockTimerInterval = null;
         let audioContext = null;
 
-        // Initialize
         function init() {
             document.getElementById('ui-title').innerText = CONFIG.TEXT.title;
             unlockBtn.innerText = `🔓 ${CONFIG.TEXT.unlock}`;
             
+            // 动态挂载密码字符
             for(let i = 0; i < 4; i++) {
-                document.getElementById(`digit-${i}`).innerText = CONFIG.PASSWORD[i];
+                const digitEl = document.getElementById(`digit-${i}`);
+                if (digitEl) digitEl.innerText = CONFIG.PASSWORD[i];
             }
             document.getElementById('finalCodeDisplay').innerText = CONFIG.PASSWORD;
 
-            startMainTimer();
+            initGlobalTimer();   // 防刷新全局 5分钟 倒计时
+            checkLockState();    // 初始化检查 30秒 锁定状态
             setupInputs();
             setupAudio();
 
             unlockBtn.addEventListener('click', handleUnlock);
         }
 
-        // Timer Logic
-        function startMainTimer() {
-            updateTimerDisplay();
-            mainTimerInterval = setInterval(() => {
-                if (isGameOver) return clearInterval(mainTimerInterval);
-                
-                timeRemaining--;
-                updateTimerDisplay();
+        /* 1. 防刷新的 5分钟 全局倒计时 (localStorage) */
+        function initGlobalTimer() {
+            let endTime = localStorage.getItem('vault_end_time');
+            if (!endTime) {
+                endTime = Date.now() + CONFIG.GAME_TIME * 1000;
+                localStorage.setItem('vault_end_time', endTime);
+            }
 
-                if (timeRemaining <= 0) {
+            const updateMainTimer = () => {
+                if (isGameOver) return;
+                const remain = Math.max(0, Math.floor((parseInt(endTime) - Date.now()) / 1000));
+                
+                const m = Math.floor(remain / 60).toString().padStart(2, '0');
+                const s = (remain % 60).toString().padStart(2, '0');
+                timerDisplay.innerText = `${m}:${s}`;
+
+                if (remain <= 60 && remain > 0) {
+                    timerDisplay.classList.add('danger');
+                } else {
+                    timerDisplay.classList.remove('danger');
+                }
+
+                if (remain <= 0) {
                     clearInterval(mainTimerInterval);
                     handleTimeout();
                 }
-            }, 1000);
+            };
+
+            updateMainTimer();
+            mainTimerInterval = setInterval(updateMainTimer, 1000);
         }
 
-        function updateTimerDisplay() {
-            const m = Math.floor(Math.max(timeRemaining, 0) / 60).toString().padStart(2, '0');
-            const s = (Math.max(timeRemaining, 0) % 60).toString().padStart(2, '0');
-            timerDisplay.innerText = `${m}:${s}`;
-            
-            if (timeRemaining <= 60 && timeRemaining > 0) {
-                timerDisplay.classList.add('danger');
-            } else {
-                timerDisplay.classList.remove('danger');
+        /* 2. 防刷新的单次输错 30秒 锁定惩罚 */
+        function checkLockState() {
+            const lockUntil = localStorage.getItem('vault_lock_until');
+            if (lockUntil) {
+                const remain = Math.ceil((parseInt(lockUntil) - Date.now()) / 1000);
+                if (remain > 0) {
+                    applyLockout(remain);
+                } else {
+                    localStorage.removeItem('vault_lock_until');
+                }
             }
+        }
+
+        function triggerLockout() {
+            const lockUntil = Date.now() + CONFIG.LOCK_TIME * 1000;
+            localStorage.setItem('vault_lock_until', lockUntil);
+            applyLockout(CONFIG.LOCK_TIME);
+        }
+
+        function applyLockout(seconds) {
+            isLocked = true;
+            disableInputs();
+            unlockBtn.disabled = true;
+            errorMsg.style.display = "block";
+            errorMsg.innerText = CONFIG.TEXT.incorrect;
+
+            let remain = seconds;
+            unlockBtn.innerText = `LOCKED (${remain}S)`;
+
+            if (lockTimerInterval) clearInterval(lockTimerInterval);
+            lockTimerInterval = setInterval(() => {
+                remain--;
+                if (remain > 0) {
+                    unlockBtn.innerText = `LOCKED (${remain}S)`;
+                } else {
+                    clearInterval(lockTimerInterval);
+                    localStorage.removeItem('vault_lock_until');
+                    isLocked = false;
+                    enableInputs();
+                    unlockBtn.disabled = false;
+                    unlockBtn.innerText = `🔓 ${CONFIG.TEXT.unlock}`;
+                    errorMsg.style.display = "none";
+                }
+            }, 1000);
         }
 
         function handleTimeout() {
@@ -726,27 +752,19 @@
             disableInputs();
             unlockBtn.disabled = true;
             switchScreen('failed');
-            document.body.style.backgroundColor = "#020202";
-            document.body.style.opacity = "0.7";
         }
 
-        // Screen Switch
         function switchScreen(screenName) {
             Object.values(screens).forEach(s => s.classList.remove('active'));
-            if(screens[screenName]) {
-                screens[screenName].classList.add('active');
-            }
+            if(screens[screenName]) screens[screenName].classList.add('active');
         }
 
-        // Input Logic
         function setupInputs() {
             inputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
+                input.addEventListener('input', () => {
                     input.classList.remove('error');
-                    clearErrorUI();
-                    
+                    errorMsg.style.display = "none";
                     input.value = input.value.replace(/[^0-9]/g, '');
-                    
                     if (input.value && index < inputs.length - 1) {
                         inputs[index + 1].focus();
                     }
@@ -773,7 +791,7 @@
                     
                     const nextFocus = Math.min(index + pasteData.length, inputs.length - 1);
                     inputs[nextFocus].focus();
-                    clearErrorUI();
+                    errorMsg.style.display = "none";
                 });
             });
         }
@@ -782,9 +800,7 @@
             return Array.from(inputs).map(inp => inp.value).join('');
         }
 
-        function disableInputs() {
-            inputs.forEach(inp => inp.disabled = true);
-        }
+        function disableInputs() { inputs.forEach(inp => inp.disabled = true); }
         function enableInputs() {
             inputs.forEach(inp => {
                 inp.disabled = false;
@@ -793,13 +809,10 @@
             if (inputs.length > 0) inputs[0].focus();
         }
 
-        // Validation Logic
         function handleUnlock() {
             if (isLocked || isGameOver) return;
-            
             const val = getInputValue();
             if (val.length < 4) {
-                showError("Please enter 4 digits.");
                 triggerShake();
                 return;
             }
@@ -812,26 +825,9 @@
         }
 
         function handleFailure() {
-            attemptCount++;
             triggerShake();
             inputs.forEach(inp => inp.classList.add('error'));
-            
-            if (attemptCount >= CONFIG.MAX_ATTEMPTS) {
-                startLockout();
-            } else {
-                errorMsg.innerText = CONFIG.TEXT.incorrect;
-                errorMsg.style.display = "block";
-                attemptCountSpan.innerText = attemptCount;
-                attemptsMsg.style.display = "block";
-                
-                setTimeout(() => {
-                    inputs.forEach(inp => {
-                        inp.value = '';
-                        inp.classList.remove('error');
-                    });
-                    inputs[0].focus();
-                }, 800);
-            }
+            triggerLockout();
         }
 
         function triggerShake() {
@@ -840,89 +836,44 @@
             pinGroup.classList.add('shake');
         }
 
-        function clearErrorUI() {
-            errorMsg.style.display = "none";
-            attemptsMsg.style.display = "none";
-            inputs.forEach(inp => inp.classList.remove('error'));
-        }
-
-        showError = (msg) => {
-            errorMsg.innerText = msg;
-            errorMsg.style.display = "block";
-            attemptsMsg.style.display = "none";
-        };
-
-        // Lockout
-        function startLockout() {
-            isLocked = true;
-            disableInputs();
-            unlockBtn.disabled = true;
-            
-            errorMsg.style.display = "none";
-            attemptsMsg.style.display = "none";
-            lockMsg.style.display = "block";
-            
-            let lockTime = CONFIG.LOCK_TIME;
-            
-            const updateLockUI = () => {
-                lockTimerDisplay.innerText = `00:${lockTime.toString().padStart(2, '0')}`;
-            };
-            
-            updateLockUI();
-            
-            lockTimerInterval = setInterval(() => {
-                lockTime--;
-                updateLockUI();
-                
-                if (lockTime <= 0) {
-                    clearInterval(lockTimerInterval);
-                    endLockout();
-                }
-            }, 1000);
-        }
-
-        function endLockout() {
-            if(isGameOver) return;
-            isLocked = false;
-            attemptCount = 0;
-            enableInputs();
-            unlockBtn.disabled = false;
-            lockMsg.style.display = "none";
-            clearErrorUI();
-        }
-
         const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        // SUCCESS ANIMATION SEQUENCE
+        /* 3. 加回并重构：完整解密过程动画 -> 爆闪过场 -> 终极通关 */
         async function handleSuccess() {
             isGameOver = true;
             disableInputs();
             unlockBtn.style.display = "none";
-            clearInterval(mainTimerInterval);
-            
+            if (mainTimerInterval) clearInterval(mainTimerInterval);
+            if (lockTimerInterval) clearInterval(lockTimerInterval);
+
+            // 清除 localStorage 缓存
+            localStorage.removeItem('vault_end_time');
+            localStorage.removeItem('vault_lock_until');
+
+            // 切换到动画界面
             switchScreen('animating');
             
-            // 1. Verifying...
+            // 步骤 1: Verifying...
             document.getElementById('anim-step-0').classList.add('show');
-            await sleep(500);
+            await sleep(400);
             
-            // 2. Light up missions
+            // 步骤 2: 任务逐条核验亮起
             for(let i = 1; i <= 4; i++) {
                 document.getElementById(`anim-step-${i}`).classList.add('show');
-                await sleep(300);
+                await sleep(250);
             }
             
-            await sleep(400);
+            await sleep(300);
 
-            // 3. Digits appear
+            // 步骤 3: 密码数字逐个显现
             for(let i = 0; i < 4; i++) {
                 document.getElementById(`digit-${i}`).classList.add('show');
-                await sleep(200);
+                await sleep(180);
             }
 
-            await sleep(600);
+            await sleep(400);
 
-            // 4. Combine digits
+            // 步骤 4: 数字向中间靠拢合体
             const digits = document.querySelectorAll('.anim-digit');
             digits[0].style.transform = 'translateX(30px)';
             digits[1].style.transform = 'translateX(10px)';
@@ -930,29 +881,28 @@
             digits[3].style.transform = 'translateX(-30px)';
             digits.forEach(d => d.classList.add('combine'));
 
-            await sleep(800);
+            await sleep(600);
 
-            // 5. Vault Unlocked text
+            // 步骤 5: 成功解除锁定提示
             const unlockedMsg = document.getElementById('anim-unlocked');
             unlockedMsg.innerText = CONFIG.TEXT.vaultUnlocked;
             unlockedMsg.style.opacity = "1";
 
-            await sleep(1000);
+            await sleep(800);
 
-            // 6. FLASHBANG + SCREEN SHAKE TRANSITION
-            flashOverlay.classList.add('flash');
-            setTimeout(() => flashOverlay.classList.remove('flash'), 300);
+            // 步骤 6: 绿光炸裂过场 + 切换至终极通关界面
+            flashOverlay.classList.add('flash-green');
+            setTimeout(() => flashOverlay.classList.remove('flash-green'), 300);
 
-            // Transition body bg & show final screen
             document.body.classList.add('success-bg');
             switchScreen('success');
 
-            // Trigger Fullscreen Particle Burst VFX
+            // 触发全屏粒子 + 音效
             initParticleSystem();
             playVictorySound();
         }
 
-        // Particle System VFX
+        // 粒子特效
         function initParticleSystem() {
             const canvas = document.getElementById('particleCanvas');
             const ctx = canvas.getContext('2d');
@@ -967,46 +917,24 @@
             });
 
             const particles = [];
-            const colors = ['#ee4d2d', '#ffb703', '#00e5ff', '#ffffff', '#ff0055'];
+            const colors = ['#00ff66', '#ee4d2d', '#ffb703', '#00e5ff', '#ffffff'];
 
-            // Initial Burst (Fountain/Explosion from Center)
-            const particleCount = 180;
+            const particleCount = 200;
             for (let i = 0; i < particleCount; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 12 + 2;
+                const speed = Math.random() * 15 + 3;
                 particles.push({
                     x: width / 2,
                     y: height / 2,
                     vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2, // slightly upwards
+                    vy: Math.sin(angle) * speed - 3,
                     radius: Math.random() * 4 + 2,
                     color: colors[Math.floor(Math.random() * colors.length)],
                     alpha: 1,
                     decay: Math.random() * 0.015 + 0.005,
-                    gravity: 0.15,
-                    shape: Math.random() > 0.5 ? 'circle' : 'star'
+                    gravity: 0.12
                 });
             }
-
-            // Continuous Floating Ambient Particles
-            function spawnAmbientParticle() {
-                if (particles.length < 250) {
-                    particles.push({
-                        x: Math.random() * width,
-                        y: height + 10,
-                        vx: (Math.random() - 0.5) * 1.5,
-                        vy: - (Math.random() * 2 + 1),
-                        radius: Math.random() * 3 + 1.5,
-                        color: colors[Math.floor(Math.random() * colors.length)],
-                        alpha: Math.random() * 0.8 + 0.2,
-                        decay: 0.003,
-                        gravity: -0.01,
-                        shape: 'circle'
-                    });
-                }
-            }
-
-            let ambientTimer = setInterval(spawnAmbientParticle, 100);
 
             function render() {
                 ctx.clearRect(0, 0, width, height);
@@ -1035,13 +963,15 @@
                     ctx.restore();
                 }
 
-                requestAnimationFrame(render);
+                if (particles.length > 0) {
+                    requestAnimationFrame(render);
+                }
             }
 
             render();
         }
 
-        // Audio Management
+        // 音效控制
         function setupAudio() {
             audioBtn.addEventListener('click', () => {
                 isMuted = !isMuted;
@@ -1073,27 +1003,29 @@
                     osc.stop(audioContext.currentTime + startTime + duration);
                 };
 
-                // Futuristic Triumph Chord Fanfare
-                playNote(523.25, 0.0, 0.8, 'sine', 0.3);   // C5
-                playNote(659.25, 0.1, 0.8, 'sine', 0.3);   // E5
-                playNote(783.99, 0.2, 0.8, 'sine', 0.3);   // G5
+                // 胜利和弦
+                playNote(523.25, 0.0, 0.8, 'sine', 0.3);   
+                playNote(659.25, 0.1, 0.8, 'sine', 0.3);   
+                playNote(783.99, 0.2, 0.8, 'sine', 0.3);   
 
-                playNote(783.99, 0.8, 1.0, 'triangle', 0.3); // G5
-                playNote(987.77, 0.9, 1.0, 'triangle', 0.3); // B5
-                playNote(1174.66, 1.0, 1.0, 'triangle', 0.3); // D6
-
-                // Grand Final Chord & Sparkle
-                playNote(1046.50, 1.5, 3.5, 'sine', 0.5);  // C6
-                playNote(1318.51, 1.6, 3.5, 'sine', 0.4);  // E6
-                playNote(1567.98, 1.7, 3.5, 'sine', 0.4);  // G6
-                playNote(2093.00, 1.9, 4.0, 'sine', 0.3);  // C7
+                playNote(1046.50, 0.5, 2.5, 'triangle', 0.5); 
+                playNote(1318.51, 0.6, 2.5, 'sine', 0.4);  
+                playNote(1567.98, 0.7, 2.5, 'sine', 0.4);  
 
             } catch(e) {
-                console.log("Audio playback blocked/unsupported.");
+                console.log("Audio playback blocked.");
             }
         }
 
         window.addEventListener('DOMContentLoaded', init);
+
+        // 开发者测试专用：按 Shift + R 快速重置缓存并刷新页面
+        window.addEventListener('keydown', (e) => {
+            if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
     </script>
 </body>
 </html>
